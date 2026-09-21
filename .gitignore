@@ -1,0 +1,38 @@
+git_verify.md
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+dist/
+build/
+
+# Data
+data/raw/
+data/processed/
+data/embeddings/
+
+# Model caches
+.cache/
+*.pt
+*.bin
+
+# Editors
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
