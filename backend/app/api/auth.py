@@ -129,9 +129,7 @@ def request_password_reset(
 
 @router.post("/password-reset/confirm", response_model=UserOut)
 @limiter.limit("10/minute")
-def confirm_password_reset(
-    request: Request, payload: PasswordResetConfirm, db: Session = Depends(get_db)
-) -> User:
+def confirm_password_reset(request: Request, payload: PasswordResetConfirm, db: Session = Depends(get_db)) -> User:
     user = auth_service.confirm_password_reset(db, raw_token=payload.token, new_password=payload.new_password)
     log_event(db, user_id=user.id, action="password_reset", resource=f"user:{user.id}")
     return user

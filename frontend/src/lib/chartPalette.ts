@@ -1,5 +1,5 @@
 // Validated categorical/sequential/status palette (see the dataviz skill's
-// references/palette.md). Order is the CVD-safety mechanism — never reorder
+// references/palette.md). Order is the CVD-safety mechanism, never reorder
 // or cycle past what a chart actually needs.
 export const categorical = [
   "#2a78d6", // 1 blue

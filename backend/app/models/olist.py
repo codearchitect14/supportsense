@@ -41,7 +41,9 @@ class FactOrder(Base):
     __tablename__ = "fact_orders"
 
     order_id: Mapped[str] = mapped_column(String(32), primary_key=True)
-    customer_id: Mapped[str] = mapped_column(String(32), ForeignKey("dim_customers.customer_id"), nullable=False, index=True)
+    customer_id: Mapped[str] = mapped_column(
+        String(32), ForeignKey("dim_customers.customer_id"), nullable=False, index=True
+    )
     order_status: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
     order_purchase_timestamp: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
     order_approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
@@ -59,7 +61,9 @@ class FactOrderItem(Base):
 
     order_id: Mapped[str] = mapped_column(String(32), ForeignKey("fact_orders.order_id"), primary_key=True)
     order_item_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    product_id: Mapped[str] = mapped_column(String(32), ForeignKey("dim_products.product_id"), nullable=False, index=True)
+    product_id: Mapped[str] = mapped_column(
+        String(32), ForeignKey("dim_products.product_id"), nullable=False, index=True
+    )
     seller_id: Mapped[str] = mapped_column(String(32), ForeignKey("dim_sellers.seller_id"), nullable=False, index=True)
     shipping_limit_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)

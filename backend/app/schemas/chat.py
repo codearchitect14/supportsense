@@ -2,8 +2,10 @@ import uuid
 
 from pydantic import BaseModel, Field
 
+from app.schemas.base import StrictRequestModel
 
-class ChatMessageRequest(BaseModel):
+
+class ChatMessageRequest(StrictRequestModel):
     conversation_id: uuid.UUID | None = None
     message: str = Field(min_length=1, max_length=4000)
 
@@ -17,5 +19,5 @@ class ChatMessageResponse(BaseModel):
     matched_category: str | None
 
 
-class MessageFeedbackRequest(BaseModel):
+class MessageFeedbackRequest(StrictRequestModel):
     helpful: bool
