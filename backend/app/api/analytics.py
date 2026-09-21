@@ -18,6 +18,7 @@ from app.schemas.analytics import (
     SupportMetricsResponse,
 )
 from app.services import analytics_service
+from app.services.audit_service import log_event
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -52,8 +53,9 @@ def overview(
     category: str | None = None,
     granularity: str | None = Query(default="month", pattern="^(day|week|month)$"),
     db: Session = Depends(get_db),
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ) -> OverviewResponse:
+    log_event(db, user_id=current_user.id, action="analytics_access", resource="analytics:overview")
     return OverviewResponse(
         kpis=analytics_service.get_kpis(db, start_date, end_date, category),
         revenue_trend=analytics_service.get_revenue_trend(db, start_date, end_date, category, granularity),
@@ -70,8 +72,9 @@ def customers(
     end_date: date | None = None,
     granularity: str | None = Query(default="month", pattern="^(day|week|month)$"),
     db: Session = Depends(get_db),
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ) -> CustomersResponse:
+    log_event(db, user_id=current_user.id, action="analytics_access", resource="analytics:customers")
     return CustomersResponse(
         growth=analytics_service.get_customer_growth(db, start_date, end_date, granularity),
         top_customers=analytics_service.get_top_customers(db, start_date, end_date),
@@ -86,8 +89,9 @@ def operations(
     end_date: date | None = None,
     granularity: str | None = Query(default="month", pattern="^(day|week|month)$"),
     db: Session = Depends(get_db),
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ) -> OperationsResponse:
+    log_event(db, user_id=current_user.id, action="analytics_access", resource="analytics:operations")
     review_metrics = analytics_service.get_review_metrics(db, start_date, end_date, granularity)
     return OperationsResponse(
         payment_methods=analytics_service.get_payment_methods(db, start_date, end_date),
@@ -105,8 +109,9 @@ def support(
     end_date: date | None = None,
     granularity: str | None = Query(default="month", pattern="^(day|week|month)$"),
     db: Session = Depends(get_db),
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ) -> SupportMetricsResponse:
+    log_event(db, user_id=current_user.id, action="analytics_access", resource="analytics:support")
     return SupportMetricsResponse(**analytics_service.get_support_metrics(db, start_date, end_date, granularity))
 
 
@@ -119,8 +124,9 @@ def export_revenue_trend(
     category: str | None = None,
     granularity: str | None = Query(default="month", pattern="^(day|week|month)$"),
     db: Session = Depends(get_db),
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ) -> StreamingResponse:
+    log_event(db, user_id=current_user.id, action="analytics_export", resource="analytics:revenue-trend.csv")
     rows = analytics_service.get_revenue_trend(db, start_date, end_date, category, granularity)
     return _csv_response(
         "revenue-trend.csv",
@@ -136,8 +142,9 @@ def export_category_breakdown(
     start_date: date | None = None,
     end_date: date | None = None,
     db: Session = Depends(get_db),
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ) -> StreamingResponse:
+    log_event(db, user_id=current_user.id, action="analytics_export", resource="analytics:category-breakdown.csv")
     rows = analytics_service.get_category_breakdown(db, start_date, end_date, limit=1000)
     return _csv_response(
         "category-breakdown.csv",
@@ -153,8 +160,9 @@ def export_top_customers(
     start_date: date | None = None,
     end_date: date | None = None,
     db: Session = Depends(get_db),
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ) -> StreamingResponse:
+    log_event(db, user_id=current_user.id, action="analytics_export", resource="analytics:top-customers.csv")
     rows = analytics_service.get_top_customers(db, start_date, end_date, limit=500)
     return _csv_response(
         "top-customers.csv",

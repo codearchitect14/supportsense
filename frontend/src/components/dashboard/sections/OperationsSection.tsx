@@ -48,12 +48,12 @@ export function OperationsSection({ filters }: { filters: DashboardFilters }) {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatTile
           label="Avg. delivery time"
-          value={data ? `${data.delivery.average_delivery_days ?? "—"} days` : "—"}
+          value={data ? `${data.delivery.average_delivery_days ?? "-"} days` : "-"}
           loading={loading}
         />
         <StatTile
           label="On-time delivery rate"
-          value={data ? `${data.delivery.on_time_rate ?? "—"}%` : "—"}
+          value={data ? `${data.delivery.on_time_rate ?? "-"}%` : "-"}
           loading={loading}
         />
         <StatTile
@@ -61,13 +61,13 @@ export function OperationsSection({ filters }: { filters: DashboardFilters }) {
           value={
             data && ratingTrend.length
               ? (ratingTrend.reduce((sum, p) => sum + p.average_score, 0) / ratingTrend.length).toFixed(2)
-              : "—"
+              : "-"
           }
           loading={loading}
         />
         <StatTile
           label="Payment methods used"
-          value={data ? String(paymentMethods.length) : "—"}
+          value={data ? String(paymentMethods.length) : "-"}
           loading={loading}
         />
       </div>

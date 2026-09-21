@@ -23,7 +23,7 @@ const features = [
           Can I get a refund on a damaged item?
         </div>
         <div className="w-4/5 rounded-xl rounded-tl-sm bg-white px-3 py-2 text-xs text-slate-700 shadow-sm">
-          Yes — damaged items qualify for a full refund within 30 days. I can start that now.
+          Yes, damaged items qualify for a full refund within 30 days. I can start that now.
         </div>
       </div>
     ),
