@@ -10,6 +10,7 @@ from app.models.olist import (
     FactReview,
 )
 from app.models.support_kb import SupportKB
+from app.models.token import PasswordResetToken, RefreshToken
 from app.models.user import Role, User
 
 __all__ = [
@@ -26,4 +27,6 @@ __all__ = [
     "FactPayment",
     "FactReview",
     "AuditLog",
+    "RefreshToken",
+    "PasswordResetToken",
 ]

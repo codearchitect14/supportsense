@@ -1,0 +1,41 @@
+@import url("https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Sora", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand-50: #eef0ff;
+  --color-brand-100: #e0e3ff;
+  --color-brand-200: #c6caff;
+  --color-brand-300: #a3a8ff;
+  --color-brand-400: #8078fb;
+  --color-brand-500: #6653f0;
+  --color-brand-600: #5638dd;
+  --color-brand-700: #4738b8;
+  --color-brand-800: #392d8f;
+  --color-brand-900: #241d5c;
+
+  --color-accent-400: #2dd4bf;
+  --color-accent-500: #14b8a6;
+  --color-accent-600: #0d9488;
+
+  --shadow-soft: 0 1px 2px 0 rgb(17 24 39 / 0.04), 0 8px 24px -8px rgb(17 24 39 / 0.10);
+  --shadow-card: 0 1px 2px 0 rgb(17 24 39 / 0.05), 0 2px 8px -2px rgb(17 24 39 / 0.06);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #fafafa;
+  color: #1f2430;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+  letter-spacing: -0.02em;
+}

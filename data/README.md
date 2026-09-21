@@ -26,6 +26,12 @@ Load into PostgreSQL:
 python data/scripts/load_support_kb.py
 ```
 
+Generate embeddings for semantic search (run after loading):
+
+```bash
+python data/scripts/generate_embeddings.py
+```
+
 ## 2. Revenue and operations dataset
 
 Source: Kaggle, `olistbr/brazilian-ecommerce`
@@ -81,7 +87,7 @@ data/
     load_support_kb.py
     build_star_schema.py
     validate_data.py
-    generate_embeddings.py   (added in Phase 5, with the embedding service)
+    generate_embeddings.py
 ```
 
 ## 5. Prerequisites
