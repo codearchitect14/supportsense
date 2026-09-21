@@ -35,23 +35,39 @@ def _granularity(value: str | None) -> str:
 
 
 def get_data_availability(db: Session, category: str | None = None) -> dict:
-    row = db.execute(
-        text("SELECT MIN(order_purchase_timestamp) AS min_date, MAX(order_purchase_timestamp) AS max_date FROM fact_orders")
-    ).mappings().first()
-    categories = db.execute(
-        text(
-            "SELECT DISTINCT product_category_name FROM dim_products "
-            "WHERE product_category_name IS NOT NULL ORDER BY product_category_name"
+    row = (
+        db.execute(
+            text(
+                "SELECT MIN(order_purchase_timestamp) AS min_date, MAX(order_purchase_timestamp) AS max_date FROM fact_orders"
+            )
         )
-    ).scalars().all()
+        .mappings()
+        .first()
+    )
+    categories = (
+        db.execute(
+            text(
+                "SELECT DISTINCT product_category_name FROM dim_products "
+                "WHERE product_category_name IS NOT NULL ORDER BY product_category_name"
+            )
+        )
+        .scalars()
+        .all()
+    )
     return {"min_order_date": row["min_date"], "max_order_date": row["max_date"], "categories": categories}
 
 
 def _effective_range(db: Session, start_date: date | None, end_date: date | None) -> tuple[datetime, datetime]:
     if start_date is None or end_date is None:
-        bounds = db.execute(
-            text("SELECT MIN(order_purchase_timestamp) AS min_date, MAX(order_purchase_timestamp) AS max_date FROM fact_orders")
-        ).mappings().first()
+        bounds = (
+            db.execute(
+                text(
+                    "SELECT MIN(order_purchase_timestamp) AS min_date, MAX(order_purchase_timestamp) AS max_date FROM fact_orders"
+                )
+            )
+            .mappings()
+            .first()
+        )
         start_dt = datetime.combine(start_date, datetime.min.time()) if start_date else bounds["min_date"]
         end_dt = (
             datetime.combine(end_date, datetime.min.time()) + timedelta(days=1)
@@ -126,7 +142,7 @@ def get_revenue_trend(
 ) -> list[dict]:
     start_dt, end_dt = _effective_range(db, start_date, end_date)
     query = _with_status_filter(
-        f"SELECT date_trunc(:granularity, fo.order_purchase_timestamp) AS period, "
+        "SELECT date_trunc(:granularity, fo.order_purchase_timestamp) AS period, "
         "COALESCE(SUM(fp.payment_value), 0) AS revenue, COUNT(DISTINCT fo.order_id) AS order_count "
         "FROM fact_orders fo "
         "LEFT JOIN fact_payments fp ON fp.order_id = fo.order_id "
@@ -145,14 +161,16 @@ def get_revenue_trend(
         params["category"] = category
     rows = db.execute(query, params).mappings().all()
     return [
-        {"period": row["period"].date().isoformat(), "revenue": float(row["revenue"]), "order_count": row["order_count"]}
+        {
+            "period": row["period"].date().isoformat(),
+            "revenue": float(row["revenue"]),
+            "order_count": row["order_count"],
+        }
         for row in rows
     ]
 
 
-def get_category_breakdown(
-    db: Session, start_date: date | None, end_date: date | None, limit: int = 12
-) -> list[dict]:
+def get_category_breakdown(db: Session, start_date: date | None, end_date: date | None, limit: int = 12) -> list[dict]:
     start_dt, end_dt = _effective_range(db, start_date, end_date)
     query = _with_status_filter(
         "SELECT dp.product_category_name AS category, "
@@ -166,15 +184,19 @@ def get_category_breakdown(
         + _date_clause()
         + "GROUP BY dp.product_category_name ORDER BY revenue DESC LIMIT :limit"
     )
-    rows = db.execute(
-        query,
-        {
-            "excluded_statuses": _REVENUE_STATUS_EXCLUSIONS,
-            "start_date": start_dt,
-            "end_date": end_dt,
-            "limit": limit,
-        },
-    ).mappings().all()
+    rows = (
+        db.execute(
+            query,
+            {
+                "excluded_statuses": _REVENUE_STATUS_EXCLUSIONS,
+                "start_date": start_dt,
+                "end_date": end_dt,
+                "limit": limit,
+            },
+        )
+        .mappings()
+        .all()
+    )
     return [
         {"category": row["category"], "revenue": float(row["revenue"]), "order_count": row["order_count"]}
         for row in rows
@@ -186,7 +208,7 @@ def get_aov_trend(
 ) -> list[dict]:
     start_dt, end_dt = _effective_range(db, start_date, end_date)
     query = _with_status_filter(
-        f"SELECT date_trunc(:granularity, fo.order_purchase_timestamp) AS period, "
+        "SELECT date_trunc(:granularity, fo.order_purchase_timestamp) AS period, "
         "COALESCE(SUM(fp.payment_value), 0) / NULLIF(COUNT(DISTINCT fo.order_id), 0) AS aov "
         "FROM fact_orders fo "
         "LEFT JOIN fact_payments fp ON fp.order_id = fo.order_id "
@@ -204,9 +226,7 @@ def get_aov_trend(
     if category:
         params["category"] = category
     rows = db.execute(query, params).mappings().all()
-    return [
-        {"period": row["period"].date().isoformat(), "average_order_value": float(row["aov"] or 0)} for row in rows
-    ]
+    return [{"period": row["period"].date().isoformat(), "average_order_value": float(row["aov"] or 0)} for row in rows]
 
 
 def get_customer_growth(
@@ -229,15 +249,19 @@ def get_customer_growth(
         "WHERE first_order_at >= :start_date AND first_order_at < :end_date "
         "GROUP BY period ORDER BY period"
     )
-    rows = db.execute(
-        query,
-        {
-            "granularity": _granularity(granularity),
-            "excluded_statuses": _REVENUE_STATUS_EXCLUSIONS,
-            "start_date": start_dt,
-            "end_date": end_dt,
-        },
-    ).mappings().all()
+    rows = (
+        db.execute(
+            query,
+            {
+                "granularity": _granularity(granularity),
+                "excluded_statuses": _REVENUE_STATUS_EXCLUSIONS,
+                "start_date": start_dt,
+                "end_date": end_dt,
+            },
+        )
+        .mappings()
+        .all()
+    )
     # A period with a handful of new customers makes the repeat rate pure
     # sampling noise (one repeat buyer in a 1-customer month reads as
     # "100% repeat rate"), which distorts the chart's whole scale. Report
@@ -267,12 +291,25 @@ def get_top_customers(db: Session, start_date: date | None, end_date: date | Non
         + _date_clause()
         + "GROUP BY dc.customer_unique_id ORDER BY total_spent DESC LIMIT :limit"
     )
-    rows = db.execute(
-        query,
-        {"excluded_statuses": _REVENUE_STATUS_EXCLUSIONS, "start_date": start_dt, "end_date": end_dt, "limit": limit},
-    ).mappings().all()
+    rows = (
+        db.execute(
+            query,
+            {
+                "excluded_statuses": _REVENUE_STATUS_EXCLUSIONS,
+                "start_date": start_dt,
+                "end_date": end_dt,
+                "limit": limit,
+            },
+        )
+        .mappings()
+        .all()
+    )
     return [
-        {"customer_unique_id": row["customer_unique_id"], "order_count": row["order_count"], "total_spent": float(row["total_spent"])}
+        {
+            "customer_unique_id": row["customer_unique_id"],
+            "order_count": row["order_count"],
+            "total_spent": float(row["total_spent"]),
+        }
         for row in rows
     ]
 
@@ -286,9 +323,11 @@ def get_payment_methods(db: Session, start_date: date | None, end_date: date | N
         + _date_clause()
         + "GROUP BY fp.payment_type ORDER BY revenue DESC"
     )
-    rows = db.execute(
-        query, {"excluded_statuses": _REVENUE_STATUS_EXCLUSIONS, "start_date": start_dt, "end_date": end_dt}
-    ).mappings().all()
+    rows = (
+        db.execute(query, {"excluded_statuses": _REVENUE_STATUS_EXCLUSIONS, "start_date": start_dt, "end_date": end_dt})
+        .mappings()
+        .all()
+    )
     return [
         {"payment_type": row["payment_type"], "order_count": row["order_count"], "revenue": float(row["revenue"] or 0)}
         for row in rows
@@ -329,13 +368,15 @@ def get_review_metrics(db: Session, start_date: date | None, end_date: date | No
     score_rows = db.execute(score_query, {"start_date": start_dt, "end_date": end_dt}).mappings().all()
 
     trend_query = text(
-        f"SELECT date_trunc(:granularity, fo.order_purchase_timestamp) AS period, AVG(fr.review_score) AS avg_score "
+        "SELECT date_trunc(:granularity, fo.order_purchase_timestamp) AS period, AVG(fr.review_score) AS avg_score "
         "FROM fact_reviews fr JOIN fact_orders fo ON fo.order_id = fr.order_id "
         "WHERE 1=1 " + _date_clause() + "GROUP BY period ORDER BY period"
     )
-    trend_rows = db.execute(
-        trend_query, {"granularity": _granularity(granularity), "start_date": start_dt, "end_date": end_dt}
-    ).mappings().all()
+    trend_rows = (
+        db.execute(trend_query, {"granularity": _granularity(granularity), "start_date": start_dt, "end_date": end_dt})
+        .mappings()
+        .all()
+    )
 
     return {
         "review_scores": [{"score": row["score"], "count": row["count"]} for row in score_rows],
@@ -357,7 +398,7 @@ def get_support_metrics(db: Session, start_date: date | None, end_date: date | N
         params["end_date"] = datetime.combine(end_date, datetime.min.time()) + timedelta(days=1)
 
     volume_query = text(
-        f"SELECT date_trunc(:granularity, c.started_at) AS period, COUNT(*) AS count "
+        "SELECT date_trunc(:granularity, c.started_at) AS period, COUNT(*) AS count "
         "FROM conversations c WHERE 1=1 " + date_clause + "GROUP BY period ORDER BY period"
     )
     volume_rows = db.execute(volume_query, params).mappings().all()
@@ -380,7 +421,9 @@ def get_support_metrics(db: Session, start_date: date | None, end_date: date | N
     provider_query = text(
         "SELECT m.provider_used AS provider, COUNT(*) AS count FROM messages m "
         "JOIN conversations c ON c.id = m.conversation_id "
-        "WHERE m.role = 'assistant' AND m.provider_used IS NOT NULL " + date_clause + "GROUP BY m.provider_used ORDER BY count DESC"
+        "WHERE m.role = 'assistant' AND m.provider_used IS NOT NULL "
+        + date_clause
+        + "GROUP BY m.provider_used ORDER BY count DESC"
     )
     provider_rows = db.execute(provider_query, params).mappings().all()
 

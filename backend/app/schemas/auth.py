@@ -2,8 +2,10 @@ import uuid
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
+from app.schemas.base import StrictRequestModel
 
-class SignupRequest(BaseModel):
+
+class SignupRequest(StrictRequestModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
     full_name: str = Field(min_length=1, max_length=255)
@@ -31,11 +33,11 @@ class TokenResponse(BaseModel):
     user: UserOut
 
 
-class RefreshRequest(BaseModel):
+class RefreshRequest(StrictRequestModel):
     refresh_token: str | None = None
 
 
-class PasswordResetRequest(BaseModel):
+class PasswordResetRequest(StrictRequestModel):
     email: EmailStr
 
 
@@ -44,19 +46,19 @@ class PasswordResetRequestResponse(BaseModel):
     reset_token: str | None = None
 
 
-class PasswordResetConfirm(BaseModel):
+class PasswordResetConfirm(StrictRequestModel):
     token: str
     new_password: str = Field(min_length=8, max_length=128)
 
 
-class UpdateProfileRequest(BaseModel):
+class UpdateProfileRequest(StrictRequestModel):
     full_name: str = Field(min_length=1, max_length=255)
 
 
-class ChangePasswordRequest(BaseModel):
+class ChangePasswordRequest(StrictRequestModel):
     current_password: str
     new_password: str = Field(min_length=8, max_length=128)
 
 
-class UpdateUserRoleRequest(BaseModel):
+class UpdateUserRoleRequest(StrictRequestModel):
     role: str = Field(pattern="^(admin|agent|viewer)$")

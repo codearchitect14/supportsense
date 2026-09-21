@@ -60,7 +60,7 @@ export function Footer() {
               </div>
               {subscribed && (
                 <p className="mt-2 text-sm font-medium text-accent-600">
-                  You&apos;re on the list — thanks!
+                  You&apos;re on the list, thanks!
                 </p>
               )}
             </form>

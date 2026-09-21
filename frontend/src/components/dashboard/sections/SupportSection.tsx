@@ -38,17 +38,17 @@ export function SupportSection({ filters }: { filters: DashboardFilters }) {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
         <StatTile
           label="Resolved without escalation"
-          value={data?.resolution_rate_pct != null ? `${data.resolution_rate_pct}%` : "—"}
+          value={data?.resolution_rate_pct != null ? `${data.resolution_rate_pct}%` : "-"}
           loading={loading}
         />
         <StatTile
           label="Avg. tokens per conversation"
-          value={data?.average_tokens_per_conversation != null ? String(data.average_tokens_per_conversation) : "—"}
+          value={data?.average_tokens_per_conversation != null ? String(data.average_tokens_per_conversation) : "-"}
           loading={loading}
         />
         <StatTile
           label="Avg. response latency"
-          value={data?.average_response_latency_seconds != null ? `${data.average_response_latency_seconds}s` : "—"}
+          value={data?.average_response_latency_seconds != null ? `${data.average_response_latency_seconds}s` : "-"}
           loading={loading}
         />
       </div>

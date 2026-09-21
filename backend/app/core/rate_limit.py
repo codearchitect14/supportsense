@@ -1,8 +1,6 @@
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from app.core.settings import settings
-
 # slowapi's global default_limits enforcement relies on middleware route
 # introspection that does not see routes through this FastAPI version's
 # router wrapping. Every route must therefore be decorated explicitly with

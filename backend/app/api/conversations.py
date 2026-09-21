@@ -58,9 +58,7 @@ def list_conversations(
         query = query.filter(Conversation.started_at <= datetime.combine(end_date, time.max, tzinfo=timezone.utc))
     if search:
         query = query.filter(
-            Conversation.id.in_(
-                db.query(Message.conversation_id).filter(Message.content.ilike(f"%{search}%"))
-            )
+            Conversation.id.in_(db.query(Message.conversation_id).filter(Message.content.ilike(f"%{search}%")))
         )
 
     query = query.group_by(Conversation.id, last_message.c.last_message_at)

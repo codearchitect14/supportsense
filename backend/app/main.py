@@ -12,6 +12,7 @@ from app.api.router import api_router
 from app.core.exception_handlers import register_exception_handlers
 from app.core.logging import configure_logging
 from app.core.rate_limit import limiter
+from app.core.security_headers import register_security_headers
 from app.core.settings import settings
 from app.services.embedding_service import get_embedding_service
 from app.services.stt_service import get_stt_service
@@ -58,6 +59,7 @@ def create_app() -> FastAPI:
     )
     app.add_middleware(SlowAPIMiddleware)
 
+    register_security_headers(app)
     register_exception_handlers(app)
 
     app.include_router(api_router)
