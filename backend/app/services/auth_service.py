@@ -135,9 +135,9 @@ def confirm_password_reset(db: Session, *, raw_token: str, new_password: str) ->
 
     user.hashed_password = hash_password(new_password)
     record.used_at = now
-    db.query(RefreshToken).filter(
-        RefreshToken.user_id == user.id, RefreshToken.revoked_at.is_(None)
-    ).update({"revoked_at": now})
+    db.query(RefreshToken).filter(RefreshToken.user_id == user.id, RefreshToken.revoked_at.is_(None)).update(
+        {"revoked_at": now}
+    )
     db.commit()
     return user
 
@@ -155,9 +155,9 @@ def change_password(db: Session, *, user: User, current_password: str, new_passw
 
     user.hashed_password = hash_password(new_password)
     now = datetime.now(timezone.utc)
-    db.query(RefreshToken).filter(
-        RefreshToken.user_id == user.id, RefreshToken.revoked_at.is_(None)
-    ).update({"revoked_at": now})
+    db.query(RefreshToken).filter(RefreshToken.user_id == user.id, RefreshToken.revoked_at.is_(None)).update(
+        {"revoked_at": now}
+    )
     db.commit()
     db.refresh(user)
     return user

@@ -42,8 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Access tokens live only in memory, so a page reload has none. Silent
   // refresh exchanges the httponly refresh cookie for a new access token
   // without the user having to log in again. Refresh tokens are single-use
-  // and rotate on every call, so this must run at most once per mount —
-  // two concurrent calls (e.g. React StrictMode's double effect
+  // and rotate on every call, so this must run at most once per mount.
+  // Two concurrent calls (e.g. React StrictMode's double effect
   // invocation) would race for the same token and one would 401.
   const hasAttemptedRefresh = useRef(false);
   useEffect(() => {

@@ -1,0 +1,145 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: supportsense
+          POSTGRES_PASSWORD: supportsense
+          POSTGRES_DB: supportsense
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U supportsense"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      ENVIRONMENT: test
+      DATABASE_URL: postgresql+psycopg://supportsense:supportsense@localhost:5432/supportsense
+      REDIS_URL: redis://localhost:6379/0
+      JWT_SECRET_KEY: ci-test-secret
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Lint (ruff)
+        run: python -m ruff check app tests
+
+      - name: Format check (black)
+        run: python -m black --check app tests
+
+      - name: Dependency vulnerability scan (pip-audit)
+        run: pip-audit --skip-editable || true
+
+      - name: Apply database migrations
+        run: alembic upgrade head
+
+      - name: Load knowledge base fixtures and embeddings
+        run: |
+          pip install datasets
+          python - <<'PY'
+          from datasets import load_dataset
+          import os
+          os.makedirs("../data/raw", exist_ok=True)
+          ds = load_dataset("bitext/Bitext-customer-support-llm-chatbot-training-dataset")
+          ds["train"].to_csv("../data/raw/support_kb.csv", index=False)
+          PY
+          python ../data/scripts/load_support_kb.py
+          python ../data/scripts/generate_embeddings.py
+
+      - name: Run tests
+        run: python -m pytest -v
+
+  frontend:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Dependency vulnerability scan (npm audit)
+        run: npm audit --audit-level=high || true
+
+      - name: Type check and build
+        run: npm run build
+
+      - name: Run component tests
+        run: npm test
+
+  deploy:
+    needs: [backend, frontend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Trigger backend deploy (Render/Railway deploy hook)
+        if: env.RENDER_DEPLOY_HOOK_URL != ''
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: curl -fsS -X POST "$RENDER_DEPLOY_HOOK_URL"
+
+      - name: Trigger frontend deploy (Vercel/Netlify deploy hook)
+        if: env.VERCEL_DEPLOY_HOOK_URL != ''
+        env:
+          VERCEL_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: curl -fsS -X POST "$VERCEL_DEPLOY_HOOK_URL"
+
+      - name: No deploy hooks configured
+        if: env.RENDER_DEPLOY_HOOK_URL == '' && env.VERCEL_DEPLOY_HOOK_URL == ''
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          VERCEL_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: |
+          echo "No deploy hook secrets are configured for this repository."
+          echo "See docs/DEPLOYMENT.md for how to connect Render/Railway and Vercel/Netlify deploy hooks."

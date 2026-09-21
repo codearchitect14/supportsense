@@ -166,9 +166,7 @@ class ChatOrchestrationService:
                 llm_messages.append(LLMMessage(role="user", content=text))
 
                 try:
-                    result = self._provider_router.complete(
-                        llm_messages, max_tokens=settings.llm_max_response_tokens
-                    )
+                    result = self._provider_router.complete(llm_messages, max_tokens=settings.llm_max_response_tokens)
                 except AllProvidersExhaustedError as exc:
                     raise HTTPException(
                         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
