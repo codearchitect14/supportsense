@@ -10,12 +10,14 @@ from app.core.settings import settings
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.auth import (
+    ChangePasswordRequest,
     PasswordResetConfirm,
     PasswordResetRequest,
     PasswordResetRequestResponse,
     RefreshRequest,
     SignupRequest,
     TokenResponse,
+    UpdateProfileRequest,
     UserOut,
 )
 from app.services import auth_service
@@ -139,3 +141,31 @@ def confirm_password_reset(
 @limiter.limit("60/minute")
 def read_current_user(request: Request, current_user: User = Depends(get_current_user)) -> User:
     return current_user
+
+
+@router.patch("/me", response_model=UserOut)
+@limiter.limit("20/minute")
+def update_current_user(
+    request: Request,
+    payload: UpdateProfileRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> User:
+    user = auth_service.update_profile(db, user=current_user, full_name=payload.full_name)
+    log_event(db, user_id=user.id, action="profile_update", resource=f"user:{user.id}")
+    return user
+
+
+@router.post("/change-password", response_model=UserOut)
+@limiter.limit("10/minute")
+def change_password(
+    request: Request,
+    payload: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> User:
+    user = auth_service.change_password(
+        db, user=current_user, current_password=payload.current_password, new_password=payload.new_password
+    )
+    log_event(db, user_id=user.id, action="password_change", resource=f"user:{user.id}")
+    return user

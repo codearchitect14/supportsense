@@ -15,3 +15,7 @@ class ChatMessageResponse(BaseModel):
     provider_used: str
     tokens_used: int
     matched_category: str | None
+
+
+class MessageFeedbackRequest(BaseModel):
+    helpful: bool

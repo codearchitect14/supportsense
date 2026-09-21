@@ -32,9 +32,11 @@ class ChatReply:
     matched_category: str | None
 
 
-def _get_or_create_conversation(db: Session, *, user: User, conversation_id: uuid.UUID | None) -> Conversation:
+def _get_or_create_conversation(
+    db: Session, *, user: User, conversation_id: uuid.UUID | None, channel: str
+) -> Conversation:
     if conversation_id is None:
-        conversation = Conversation(user_id=user.id, channel="chat")
+        conversation = Conversation(user_id=user.id, channel=channel)
         db.add(conversation)
         db.flush()
         return conversation
@@ -131,8 +133,12 @@ class ChatOrchestrationService:
         self._semantic_cache = semantic_cache
         self._provider_router = provider_router
 
-    def handle_message(self, *, user: User, conversation_id: uuid.UUID | None, text: str) -> ChatReply:
-        conversation = _get_or_create_conversation(self._db, user=user, conversation_id=conversation_id)
+    def handle_message(
+        self, *, user: User, conversation_id: uuid.UUID | None, text: str, channel: str = "chat"
+    ) -> ChatReply:
+        conversation = _get_or_create_conversation(
+            self._db, user=user, conversation_id=conversation_id, channel=channel
+        )
         user_message = Message(conversation_id=conversation.id, role="user", content=text)
         self._db.add(user_message)
         self._db.flush()
@@ -197,13 +203,15 @@ class ChatOrchestrationService:
         )
 
     def handle_message_stream(
-        self, *, user: User, conversation_id: uuid.UUID | None, text: str
+        self, *, user: User, conversation_id: uuid.UUID | None, text: str, channel: str = "chat"
     ) -> Iterator[tuple[Literal["delta", "done"], str | ChatReply]]:
         """Same flow as handle_message, but yields ("delta", text) chunks as
         they arrive and a final ("done", ChatReply). A KB-direct answer or a
         cache hit is already fully known, so it's yielded as one delta.
         """
-        conversation = _get_or_create_conversation(self._db, user=user, conversation_id=conversation_id)
+        conversation = _get_or_create_conversation(
+            self._db, user=user, conversation_id=conversation_id, channel=channel
+        )
         user_message = Message(conversation_id=conversation.id, role="user", content=text)
         self._db.add(user_message)
         self._db.flush()

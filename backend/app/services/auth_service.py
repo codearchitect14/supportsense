@@ -140,3 +140,36 @@ def confirm_password_reset(db: Session, *, raw_token: str, new_password: str) ->
     ).update({"revoked_at": now})
     db.commit()
     return user
+
+
+def update_profile(db: Session, *, user: User, full_name: str) -> User:
+    user.full_name = full_name
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def change_password(db: Session, *, user: User, current_password: str, new_password: str) -> User:
+    if not verify_password(current_password, user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="current password is incorrect")
+
+    user.hashed_password = hash_password(new_password)
+    now = datetime.now(timezone.utc)
+    db.query(RefreshToken).filter(
+        RefreshToken.user_id == user.id, RefreshToken.revoked_at.is_(None)
+    ).update({"revoked_at": now})
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def update_user_role(db: Session, *, user_id: uuid.UUID, role_name: str) -> User:
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="user not found")
+
+    role = _get_role(db, role_name)
+    user.role_id = role.id
+    db.commit()
+    db.refresh(user)
+    return user

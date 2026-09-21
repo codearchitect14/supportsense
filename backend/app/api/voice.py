@@ -42,7 +42,11 @@ async def send_voice_message(
         transcript = ""
 
     reply = await run_in_threadpool(
-        chat_service.handle_message, user=current_user, conversation_id=None, text=transcript or "(no speech detected)"
+        chat_service.handle_message,
+        user=current_user,
+        conversation_id=None,
+        text=transcript or "(no speech detected)",
+        channel="voice",
     )
 
     tts_service = get_tts_service()
@@ -99,7 +103,7 @@ async def stream_voice(
 
         try:
             for event_type, data in chat_service.handle_message_stream(
-                user=current_user, conversation_id=conversation_id, text=transcript
+                user=current_user, conversation_id=conversation_id, text=transcript, channel="voice"
             ):
                 if event_type == "delta":
                     await websocket.send_json({"type": "answer_delta", "text": data})

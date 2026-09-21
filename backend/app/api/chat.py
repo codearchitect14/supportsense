@@ -1,13 +1,15 @@
 import logging
+import uuid
 
-from fastapi import APIRouter, Depends, Request, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import require_roles, require_roles_ws
 from app.core.rate_limit import limiter
 from app.db.session import get_db
+from app.models.conversation import Conversation, Message
 from app.models.user import User
-from app.schemas.chat import ChatMessageRequest, ChatMessageResponse
+from app.schemas.chat import ChatMessageRequest, ChatMessageResponse, MessageFeedbackRequest
 from app.services.chat_service import ChatOrchestrationService
 from app.services.embedding_service import get_embedding_service
 from app.services.llm.factory import get_provider_router, get_semantic_cache
@@ -52,6 +54,30 @@ def send_message(
         tokens_used=reply.tokens_used,
         matched_category=reply.matched_category,
     )
+
+
+@router.post("/messages/{message_id}/feedback", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("60/minute")
+def submit_message_feedback(
+    request: Request,
+    message_id: uuid.UUID,
+    payload: MessageFeedbackRequest,
+    current_user: User = Depends(require_roles(*CHAT_ROLES)),
+    db: Session = Depends(get_db),
+) -> None:
+    message = (
+        db.query(Message)
+        .join(Conversation, Message.conversation_id == Conversation.id)
+        .filter(Message.id == message_id, Conversation.user_id == current_user.id)
+        .first()
+    )
+    if message is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="message not found")
+    if message.role != "assistant":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="only assistant messages can be rated")
+
+    message.feedback = payload.helpful
+    db.commit()
 
 
 @router.websocket("/stream")
